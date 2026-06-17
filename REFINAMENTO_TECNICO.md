@@ -1,111 +1,126 @@
-# 📘 Documentação de Refinamento Técnico  
-## Projeto: OniBus Express — Sistema de Venda de Passagens Rodoviárias
+# Documentacao de Refinamento Tecnico
+## Projeto: OniBus Express
+
+## Objetivo
+Consolidar o estado atual do MVP de venda de passagens rodoviarias, registrando decisoes tecnicas, funcionalidades implementadas e ajustes recentes no projeto.
 
 ---
 
-## 🎯 Objetivo
-Construir um MVP que permita **buscar e comprar passagens rodoviárias online**, garantindo regras de negócio essenciais e uma experiência de usuário fluida.  
-
----
-
-## 🛠️ Arquitetura Geral
+## Arquitetura Implementada
 
 ### Backend (.NET 8 + EF Core + PostgreSQL)
-- **API RESTful** em ASP.NET Core Web API.
-- **Camadas sugeridas**:
-  - `Domain`: entidades e regras de negócio.
-  - `Application`: casos de uso e serviços.
-  - `Infrastructure`: persistência (EF Core), repositórios, migrations.
-  - `Api`: controladores, endpoints, middlewares.
-- **Banco de dados relacional** com migrations automáticas.
-- **Docker Compose** para orquestrar API + DB.
-- **Testes** com xUnit/NUnit + SQLite in-memory ou TestContainers.
+- API REST em ASP.NET Core 8.
+- Arquitetura em camadas:
+   - Domain: entidades, enums e regras de negocio.
+   - Application: contratos e servicos de aplicacao.
+   - Infrastructure: EF Core, DbContext, repositorio, migrations e seed.
+   - Api: controllers, configuracao e middleware de excecao.
+- Persistencia em PostgreSQL 16.
+- Migrations versionadas em Infrastructure.
 
-### Frontend (React 18 + TypeScript)
-- **SPA** servida via Nginx em Docker.
-- **Gerenciamento de estado**: Redux Toolkit ou Zustand.
-- **Testes** com React Testing Library + Jest/Vitest.
-- **Estrutura modular**: `components/`, `pages/`, `services/`.
+### Frontend (React 19 + TypeScript)
+- SPA com Vite, servida por Nginx no container.
+- Estado com hooks e Zustand no projeto.
+- Estrutura modular em components, hooks, services, store, utils.
 
----
-
-## 📑 Entidades e Relacionamentos
-
-| Entidade | Campos | Observações |
-|----------|--------|-------------|
-| **Rota** | Origem, destino, duração | Base para viagens |
-| **Viagem** | Rota, data/hora, preço, assentos | Deve validar disponibilidade |
-| **Passageiro** | Nome, CPF, e-mail, nascimento | CPF validado |
-| **Reserva** | Viagem, passageiro, assento, status, código | Código único e legível |
+### Infraestrutura
+- Docker Compose com 3 servicos: postgres, api e frontend.
+- API exposta em http://localhost:8080.
+- Frontend exposto em http://localhost:3000.
 
 ---
 
-## 🔗 Endpoints Backend
+## Entidades e Relacionamentos
 
-- `GET /rotas` → listar rotas.
-- `GET /viagens` → buscar por origem/destino/data.
-- `GET /viagens/{id}` → detalhes + assentos.
-- `POST /reservas` → criar reserva.
-- `GET /reservas/{codigo}` → consultar reserva.
-- `DELETE /reservas/{codigo}` → cancelar reserva.
-
----
-
-## 📏 Regras de Negócio
-
-- Assento não pode ser reservado se já ocupado.  
-- Não reservar viagens já realizadas.  
-- CPF validado (formato + dígito verificador).  
-- Código de reserva único (`ABC-12345`).  
-- Cancelamento permitido até **2h antes da partida**.  
+| Entidade | Campos principais | Observacoes |
+|----------|-------------------|-------------|
+| Rota | Origem, Destino, DuracaoMinutos | Base para composicao das viagens |
+| Viagem | RotaId, DataHoraPartidaUtc, Preco, TotalAssentos | Relaciona rota e disponibilidade |
+| Passageiro | Nome, Cpf, Email, DataNascimento | CPF validado por regra de dominio |
+| Reserva | CodigoReserva, ViagemId, PassageiroId, NumeroAssento, Status | Status Ativa/Cancelada |
 
 ---
 
-## ✅ Testes Automatizados
+## Endpoints Disponiveis
 
-- **Unitários**: validação de CPF, geração de código de reserva.  
-- **Integração**: reserva de assento, cancelamento dentro do prazo.  
-- **Ferramentas**: xUnit/NUnit + SQLite in-memory.  
-
----
-
-## 🖥️ Telas Frontend
-
-1. **Busca de Passagens**  
-   - Formulário (origem, destino, data).  
-   - Listagem de viagens com preço e vagas.  
-
-2. **Seleção de Assento**  
-   - Mapa visual (livre/ocupado/selecionado).  
-   - Informações da viagem.  
-
-3. **Dados do Passageiro e Confirmação**  
-   - Formulário com validação.  
-   - Resumo da compra.  
-   - Tela de sucesso com código da reserva.  
-
-4. **Consulta de Reserva (Bonus)**  
-   - Campo para código.  
-   - Exibir detalhes e opção de cancelamento.  
+- GET /rotas
+- GET /viagens?origem=&destino=&data=
+- GET /viagens/{id}
+- POST /reservas
+- GET /reservas/{codigo}
+- DELETE /reservas/{codigo}
 
 ---
 
-## 🐳 Docker
+## Regras de Negocio Implementadas
 
-- `docker-compose.yml` deve subir:
-  - API .NET  
-  - Banco de dados (Postgres)  
-  - Frontend React (Nginx)  
-- Comando único:  
-  ```bash
-  docker-compose up --build
+- CPF obrigatorio e validado por digitos verificadores.
+- Reserva de assento unico por viagem para status ativo.
+- Nao permite reservar viagem ja realizada.
+- Codigo de reserva no formato ABC-12345 com tentativa de unicidade.
+- Cancelamento permitido ate 2 horas antes da partida.
 
 ---
 
-## 🚀 Pontos de Melhoria Futuro
+## Seed e Dados Iniciais
 
-- Autenticação de usuários (login/cadastro).
-- Pagamentos integrados (gateway).
-- Histórico de reservas.
-- Notificações (e-mail/SMS).
-- Observabilidade (logs, métricas, tracing).
+- Seed cria 3 rotas base.
+- Seed popula viagens para hoje e amanha (UTC).
+- Total de viagens iniciais planejadas: 8 (4 por dia).
+- Seed idempotente: evita duplicar viagem ja existente.
+
+---
+
+## Frontend: Fluxo e UX
+
+### Fluxo principal
+1. Busca de viagens por origem, destino e data.
+2. Selecao de viagem.
+3. Selecao de assento.
+4. Preenchimento de dados do passageiro.
+5. Confirmacao e exibicao de codigo da reserva.
+6. Consulta/cancelamento por codigo.
+
+### Tratamento de erros
+- Erros agora sao exibidos em pop-up modal sobreposto.
+- Titulo do pop-up: "Atencao!".
+- Fechamento por:
+   - Botao "Fechar".
+   - Clique fora do conteudo do modal.
+   - Tecla Esc.
+
+---
+
+## Testes
+
+- Projeto de testes: OnibusExpress.Tests.
+- Cobertura atual com testes unitarios e de integracao para:
+   - Validacao de CPF.
+   - Geracao de codigo de reserva.
+   - Reserva e cancelamento.
+   - Endpoints HTTP principais.
+- Quantidade atual no projeto: 8 testes.
+
+---
+
+## Docker
+
+- Servicos no compose:
+   - postgres (healthcheck ativo)
+   - api
+   - frontend
+- Comando de subida com build:
+
+```bash
+docker compose up --build -d
+```
+
+---
+
+## Melhorias Futuras
+
+- Autenticacao/autorizacao de usuarios.
+- Pagamentos integrados.
+- Historico de reservas por passageiro.
+- Rate limiting e observabilidade (logs/metricas/tracing).
+- Testes E2E de interface.
