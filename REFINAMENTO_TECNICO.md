@@ -10,7 +10,7 @@ Construir um MVP que permita **buscar e comprar passagens rodoviárias online**,
 
 ## 🛠️ Arquitetura Geral
 
-### Backend (.NET 8 + EF Core + PostgreSQL/SQL Server)
+### Backend (.NET 8 + EF Core + PostgreSQL)
 - **API RESTful** em ASP.NET Core Web API.
 - **Camadas sugeridas**:
   - `Domain`: entidades e regras de negócio.
@@ -94,8 +94,18 @@ Construir um MVP que permita **buscar e comprar passagens rodoviárias online**,
 
 - `docker-compose.yml` deve subir:
   - API .NET  
-  - Banco de dados (Postgres/SQL Server)  
+  - Banco de dados (Postgres)  
   - Frontend React (Nginx)  
 - Comando único:  
   ```bash
   docker-compose up --build
+
+---
+
+## 🚀 Pontos de Melhoria Futuro
+
+- Autenticação de usuários (login/cadastro).
+- Pagamentos integrados (gateway).
+- Histórico de reservas.
+- Notificações (e-mail/SMS).
+- Observabilidade (logs, métricas, tracing).
