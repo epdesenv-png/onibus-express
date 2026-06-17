@@ -162,6 +162,42 @@ button:disabled {
   font-weight: 700;
 }
 
+.error-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(10, 22, 33, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.error-popup {
+  width: min(460px, 100%);
+  background: #ffffff;
+  border: 1px solid #e5b7b2;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.24);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.error-popup h3 {
+  margin: 0;
+  color: #9d1c16;
+}
+
+.error-popup p {
+  margin: 0;
+  color: #283742;
+}
+
+.error-popup button {
+  justify-self: end;
+  min-width: 100px;
+}
+
 .success-card {
   background: linear-gradient(120deg, #edfff4, #f2f8ff);
 }
