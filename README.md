@@ -1,314 +1,300 @@
 # OniBus Express
 
-MVP para busca, compra e consulta de passagens rodoviárias com .NET 8 e React 18.
+MVP para busca, compra e consulta de passagens rodoviárias com .NET 8 e React 19.
 
-## Stack & Tecnologias
+## O que este projeto entrega
+
+Sistema web para:
+- buscar viagens por origem, destino e data;
+- visualizar assentos ocupados e disponíveis;
+- reservar assentos com validações de negócio;
+- consultar e cancelar reservas;
+- operar localmente com e sem Docker.
+
+---
+
+## Tecnologias e bibliotecas usadas, e por quê
 
 ### Backend
-
-- **ASP.NET Core 8** — Framework web robusto com alta performance.
-- **Entity Framework Core 8** — ORM type-safe com migrações versionadas para PostgreSQL.
-- **PostgreSQL 16** — Banco relacional com suporte a índices únicos.
-- **xUnit + SQLite in-memory** — Testes rápidos sem dependência de banco real.
-- **WebApplicationFactory** — Testes de integração HTTP sem servidor separado.
+- **ASP.NET Core 8**: base da API por ser o framework oficial do ecossistema .NET, com boa produtividade e performance.
+- **Entity Framework Core 8**: persistência com migrations e modelagem forte, reduzindo boilerplate de acesso ao banco.
+- **PostgreSQL 16**: banco relacional robusto, compatível com constraints e índices usados no domínio.
+- **xUnit**: framework de testes simples e consolidado no ecossistema .NET.
+- **SQLite in-memory**: usado nos testes de integração para evitar dependência externa de banco.
+- **WebApplicationFactory**: permite testar a API HTTP sem subir servidor manualmente.
 
 ### Frontend
-
-- **React 19** — UI componentizada com hooks.
-- **TypeScript** — Type-safety em compilação.
-- **Zustand** — Gerenciamento de estado global minimalista.
-- **Vite** — Build tool rápido com HMR.
-- **Nginx** — Reverse proxy para servir SPA em containers.
+- **React 19**: composição por componentes e estado reativo para a UI do fluxo de compra.
+- **TypeScript**: tipagem estática para reduzir erros e deixar contratos mais claros.
+- **Zustand**: estado global enxuto; suficiente para o fluxo do app sem o peso de uma solução maior.
+- **Vite**: build rápido e experiência de desenvolvimento com HMR.
+- **@testing-library/react + user-event + Vitest**: testes mais próximos do comportamento real do usuário.
+- **Nginx**: serve a SPA em produção/container com simplicidade e desempenho.
 
 ### Infraestrutura
-
-- **Docker Compose** — Orquestração local (Postgres, API, Frontend).
-- **CORS** — Configurado por ambiente.
-- **Proxy Vite** — Em dev, frontend roteia `/rotas`, `/viagens`, `/reservas` para localhost:8080.
-- **global.json** — Fixa SDK 8.0.422.
+- **Docker Compose**: orquestra API, frontend e PostgreSQL em desenvolvimento e execução local.
+- **CORS**: libera a integração entre frontend e API quando estão em origens diferentes.
+- **global.json**: fixa a versão do SDK .NET usada no projeto.
 
 ---
 
-## Arquitetura
+## Como rodar o projeto localmente
 
-### Backend em camadas
-
-```
-OnibusExpress.Api (controllers, startup, middleware)
-    ↓
-OnibusExpress.Application (ReservaService, ConsultaService)
-    ↓
-OnibusExpress.Infrastructure (EF Core, DbContext, repositório, migrations)
-    ↓
-OnibusExpress.Domain (entidades, enums, regras de negócio)
-```
-
-**Fluxo:** Controller → Service (validações) → Repository (persistência) → Middleware (erros).
-
-### Entidades
-
-- **Rota** (1:n) **Viagem** — trecho e horário.
-- **Viagem** (1:n) **Reserva** — passagem com n assentos.
-- **Passageiro** (1:n) **Reserva** — múltiplas reservas por pessoa.
-- **ReservaStatus** — Ativa | Cancelada.
-
-### Frontend
-
-- **Zustand store** — Estado centralizado (busca, viagem, assento, reserva).
-- **api.ts** — HTTP client com tratamento de erro.
-- **types.ts** — Tipos compartilhados.
-- **UI em 4 passos** — Busca → Assento → Dados → Sucesso → Consulta.
-
----
-
-## Fluxo de compra
-
-1. **Busca** — `GET /viagens?origem=X&destino=Y&data=Z` → lista com assentos disponíveis.
-2. **Detalhe** — `GET /viagens/{id}` → assentos ocupados para render visual.
-3. **Reserva** — `POST /reservas` → código ABC-12345.
-4. **Consulta** — `GET /reservas/{código}` → status e dados.
-5. **Cancelamento** — `DELETE /reservas/{código}` → se > 2h antes partida.
-
----
-
-## Regras de negócio implementadas
-
-✅ **CPF validado** — Dígitos verificadores + rejeição de duplicatas.
-✅ **Assento único** — Constraint UNIQUE em (ViagemId, NumeroAssento, Status=Ativa).
-✅ **Viagem não realizada** — `DataHoraPartidaUtc > UtcNow`.
-✅ **Código único** — ABC-12345 com retry até 20x.
-✅ **Cancelamento com prazo** — Até 2h antes da partida.
-✅ **Seed inicial** — 3 rotas + 8 viagens (hoje e amanhã).
-
----
-
-## O que foi implementado
-
-### Backend
-- 5 projetos em camadas (Domain, Application, Infrastructure, Api, Tests)
-- 4 entidades principais (Rota, Viagem, Passageiro, Reserva)
-- 2 serviços de aplicação (ConsultaService, ReservaService)
-- 6 endpoints REST
-- Middleware de tratamento de exceções
-- EF Core migrations versionadas
-- Validadores de domínio (CPF, código de reserva)
-- **8 testes** (unitários, integração, API HTTP)
-
-### Frontend
-- Interface em 4 passos (busca, assento, dados, sucesso)
-- Visualização de assentos interativa
-- Consulta e cancelamento de reservas
-- Estado global persistente
-- Tratamento de erros amigável
-- Design responsivo
-- Build otimizado <200KB
-
-### Infraestrutura
-- Docker Compose com healthcheck
-- .dockerignore para acelerar builds
-- CORS configurável
-- Proxy Vite para dev
-
----
-
-## O que ficou de fora
-
-❌ Autenticação/Autorização (sem JWT)
-❌ Rate limiting
-❌ Paginação (retorna todas as viagens)
-❌ Cache distribuído (sem Redis)
-❌ Logging centralizado (console only)
-❌ Testes E2E (Cypress/Playwright)
-❌ Validação de email
-❌ Auditoria completa (soft delete sem timestamps)
-❌ OpenAPI comentado
-❌ Multilíngue
-
----
-
-## Como rodar
-
-### Localmente sem Docker
+### Sem Docker
 
 #### Pré-requisitos
-- .NET SDK 8.0.422 (ou versão mais recente; fixado em `global.json`)
+- .NET SDK 8.x
 - Node.js 22+
-- PostgreSQL 16+
-- Definir `ConnectionStrings__Postgres` no ambiente (ou User Secrets)
+- PostgreSQL 16+ rodando localmente
 
 #### Backend
 
 ```powershell
 cd backend
 
-# Definir connection string (PowerShell)
 $env:ConnectionStrings__Postgres="Host=localhost;Port=5432;Database=onibus_express;Username=postgres;Password=<SUA_SENHA>"
-
-# (Opcional) Aplicar migrations
 dotnet ef database update --project OnibusExpress.Infrastructure --startup-project OnibusExpress.Api
-
-# Rodar testes
-dotnet test
-
-# Rodar API
-dotnet run --project OnibusExpress.Api
+dotnet run --no-launch-profile --project OnibusExpress.Api
 ```
 
-API em http://localhost:8080.
+API local: http://localhost:8080
 
 #### Frontend
 
 ```powershell
 cd frontend
-
 npm install
-
-# Dev mode com proxy para localhost:8080 (sem CORS)
 npm run dev
 ```
 
-Acesse http://localhost:5173 no navegador.
+Frontend local: http://localhost:5173
 
----
+Observação: o Vite está configurado para fazer proxy de `/rotas`, `/viagens` e `/reservas` para `http://localhost:8080`.
 
 ### Com Docker
 
 #### Pré-requisitos
-- Docker Desktop para Windows instalado (com backend WSL2 habilitado)
-- Docker Engine em execução (Docker Desktop aberto)
-- Arquivo `.env` na raiz do projeto (já existe neste ambiente local)
+- Docker Desktop instalado e em execução
+- Arquivo `.env` na raiz do projeto
 
-#### Setup inicial (Windows)
-
-```powershell
-# Validar se Docker está instalado
-docker --version
-
-# Validar plugin do Compose
-docker compose version
-
-# (Se ainda nao existir) criar .env a partir do exemplo
-Copy-Item .env.example .env
-```
-
-Se `docker --version` falhar, instale o Docker Desktop e reinicie o terminal.
-
-#### Startup
+#### Subir tudo
 
 ```powershell
-docker compose up --build
+docker compose up --build -d
 ```
 
-Aguarde ~30s para Postgres (healthcheck) e API (migrations).
-
-**Serviços:**
+Serviços expostos:
 - Frontend: http://localhost:3000
-- API Swagger: http://localhost:8080/swagger
-- Postgres: localhost:5432 (credenciais definidas em `.env`)
+- API: http://localhost:8080
+- Swagger: http://localhost:8080/swagger
+- PostgreSQL: localhost:5432
 
-#### Shutdown
+#### Parar tudo
 
 ```powershell
 docker compose down
 ```
 
-#### Logs úteis
+#### Logs
 
 ```powershell
-# Ver logs de todos os serviços
 docker compose logs -f
-
-# Ver logs apenas da API
 docker compose logs -f api
 ```
 
 ---
 
-## Como rodar testes
+## Arquitetura e decisões relevantes
 
-### Unitários (domínio)
+### Backend em camadas
 
-```powershell
-cd backend
-dotnet test OnibusExpress.Tests/OnibusExpress.Tests.csproj -v minimal --filter "CpfValidatorTests|CodigoReservaGeneratorTests"
+```text
+OnibusExpress.Api
+    ↓
+OnibusExpress.Application
+    ↓
+OnibusExpress.Infrastructure
+    ↓
+OnibusExpress.Domain
 ```
 
-✓ Validação de CPF (dígitos verificadores)
-✓ Geração de código de reserva
+Fluxo principal:
+- Controller → Service → Repository → Banco
 
-### Integração (serviços + repositório)
-
-```powershell
-dotnet test OnibusExpress.Tests/OnibusExpress.Tests.csproj -v minimal --filter "ReservaServiceIntegrationTests"
-```
-
-✓ Criar reserva com validações completas
-✓ Cancelar reserva dentro do prazo
-✓ SQLite in-memory isolado por teste
-
-### API HTTP
-
-```powershell
-dotnet test OnibusExpress.Tests/OnibusExpress.Tests.csproj -v minimal --filter "ApiEndpointsIntegrationTests"
-```
-
-✓ GET /rotas
-✓ GET /viagens
-✓ POST /reservas
-✓ DELETE /reservas/{codigo}
-✓ Validação de CPF inválido (status 400)
-
-### Todos
-
-```powershell
-cd backend
-dotnet test OnibusExpress.sln -v minimal
-```
-
-**Resultado esperado:** ✅ **13 aprovados** em ~3 segundos.
+### Decisões principais
+1. **Separação em camadas**: facilita evolução, testes e manutenção.
+2. **EF Core + migrations**: deixa o schema versionado e rastreável.
+3. **Zustand no frontend**: reduz complexidade para um fluxo de compra relativamente simples.
+4. **Proxy no Vite**: simplifica desenvolvimento local sem CORS manual.
+5. **WebApplicationFactory nos testes de API**: garante cobertura HTTP sem levantar servidor separado.
+6. **Docker Compose**: torna a execução local reproduzível.
 
 ---
 
-## Endpoints
+## Modelo entidade/relacionamento
 
-### GET /rotas
-Lista de rotas (origem, destino, duração).
+```mermaid
+erDiagram
+    ROTA ||--o{ VIAGEM : possui
+    VIAGEM ||--o{ RESERVA : recebe
+    PASSAGEIRO ||--o{ RESERVA : realiza
 
-### GET /viagens?origem=X&destino=Y&data=2099-12-31
-Viagens disponíveis com assentos disponíveis.
+    ROTA {
+        int Id PK
+        string Origem
+        string Destino
+        int DuracaoMinutos
+    }
 
-### GET /viagens/{id}
-Detalhe de viagem com assentos ocupados.
+    VIAGEM {
+        int Id PK
+        int RotaId FK
+        datetime DataHoraPartidaUtc
+        decimal Preco
+        int TotalAssentos
+    }
 
-### POST /reservas
-```json
-{
-  "viagemId": 1,
-  "numeroAssento": 5,
-  "nome": "João Silva",
-  "cpf": "52998224725",
-  "email": "joao@email.com",
-  "dataNascimento": "1990-01-15"
-}
+    PASSAGEIRO {
+        int Id PK
+        string Nome
+        string Cpf UK
+        string Email
+        date DataNascimento
+    }
+
+    RESERVA {
+        int Id PK
+        int ViagemId FK
+        int PassageiroId FK
+        int NumeroAssento
+        int Status
+        string CodigoReserva UK
+        datetime CriadaEmUtc
+        datetime CanceladaEmUtc
+    }
 ```
 
-Retorna: `{ "codigo": "ABC-12345", "status": "Ativa", ... }`
+Detalhe completo: [MODELO_ENTIDADE_RELACIONAMENTO.md](MODELO_ENTIDADE_RELACIONAMENTO.md)
+
+---
+
+## O que foi implementado
+
+### Backend
+- API REST com 6 endpoints.
+- 4 entidades principais: Rota, Viagem, Passageiro e Reserva.
+- Serviços de aplicação para consulta e reserva.
+- Persistência com EF Core e migrations.
+- Regras de negócio: CPF, cancelamento com prazo, código único, assento único.
+
+### Frontend
+- Busca de viagens.
+- Seleção de assento.
+- Formulário de passageiro.
+- Criação e consulta de reserva.
+- Pop-up de erro com fechamento por botão, clique fora e `Esc`.
+
+### Infraestrutura
+- Docker Compose com backend, frontend e PostgreSQL.
+- Healthcheck no banco.
+- Configuração de CORS e proxy de desenvolvimento.
+
+### Testes
+- Testes unitários e de integração no backend.
+- Testes de componentes e de comportamento do usuário no frontend.
+
+---
+
+## O que ficou de fora
+
+- Autenticação e autorização.
+- Rate limiting.
+- Paginação.
+- Cache distribuído.
+- Logging centralizado/observabilidade.
+- Testes E2E com navegador automatizado.
+- Validação de e-mail mais estrita.
+- Auditoria avançada.
+- Multilíngue.
+
+---
+
+## Como rodar os testes
+
+### Frontend
+
+```powershell
+cd frontend
+npm run test
+```
+
+### Backend
+
+```powershell
+cd backend
+$env:ConnectionStrings__Postgres="Host=localhost;Port=5432;Database=onibus_express;Username=postgres;Password=<SUA_SENHA>"
+dotnet test OnibusExpress.sln -v minimal
+```
+
+Resultado atual esperado:
+- Frontend: testes de componentes + comportamento do usuário.
+- Backend: testes unitários e de integração.
+
+---
+
+## Endpoints e Swagger
+
+- Swagger: http://localhost:8080/swagger
+
+### GET /rotas
+Lista rotas disponíveis.
+
+### GET /viagens?origem=X&destino=Y&data=YYYY-MM-DD
+Busca viagens e assentos disponíveis.
+
+### GET /viagens/{id}
+Detalhe da viagem com assentos ocupados.
+
+### POST /reservas
+Cria reserva.
 
 ### GET /reservas/{codigo}
 Consulta reserva por código.
 
 ### DELETE /reservas/{codigo}
-Cancela reserva (erro se < 2h da partida).
+Cancela reserva, respeitando a regra das 2 horas.
 
 ---
 
-## Decisões de arquitetura
+## Extras e pontos de melhoria
 
-1. **EF Core + Migrations** — Type-safety, versionamento automático, rollback fácil.
-2. **Zustand** — Minimalista (~2KB), ideal para estado simples; Redux seria overhead.
-3. **SQLite in-memory** — Testes isolados, sem setup externo de banco.
-4. **Proxy Vite** — Dev sem CORS; frontend/API em localhost diferentes.
-5. **CORS em produção** — Frontend (nginx:3000) e API (dotnet:8080) separados no Docker.
-6. **Nginx + React** — Separação; frontend deployável independentemente.
-7. **WebApplicationFactory** — Testes HTTP sem spin-up de servidor separado.
-8. **Healthcheck** — API aguarda Postgres pronto antes de iniciar.
+### Extras úteis
+- Screenshots/GIF da aplicação rodando podem ser adicionados aqui para demonstrar o fluxo principal.
+
+#### Espaço reservado para mídia
+- Tela inicial / busca de viagens
+![alt text](image.png)
+![alt text](image-1.png)
+
+- Seleção de assento
+![alt text](image-2.png)
+
+- Formulário do passageiro
+![alt text](image-5.png)
+
+- Popup de erro
+![alt text](image-3.png)
+![alt text](image-4.png)
+
+- Cancelamento de reserva
+![alt text](image-6.png)
+![alt text](image-7.png)
+
+
+### Se eu tivesse mais tempo, eu implementaria
+- Autenticação de usuários.
+- Efetivação de Compra.
+- Envio de Emails (Reserva, Efetivação de compra e Cancelamento).
+- Histórico de reservas por passageiro.
+- Mais testes E2E com Playwright.
+- Observabilidade com logs estruturados e métricas.
