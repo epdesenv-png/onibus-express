@@ -93,13 +93,18 @@ Consolidar o estado atual do MVP de venda de passagens rodoviarias, registrando 
 
 ## Testes
 
+### Backend
 - Projeto de testes: OnibusExpress.Tests.
+- Framework: xUnit com WebApplicationFactory (testes HTTP) e SQLite in-memory (isolamento de banco).
 - Cobertura atual com testes unitarios e de integracao para:
    - Validacao de CPF.
    - Geracao de codigo de reserva.
    - Reserva e cancelamento.
    - Endpoints HTTP principais.
-- Quantidade atual no projeto: 8 testes.
+
+### Frontend
+- Framework: Vitest + Testing Library (React + user-event).
+- Testes de comportamento do usuario e de componentes isolados.
 
 ---
 
